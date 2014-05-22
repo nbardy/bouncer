@@ -191,7 +191,8 @@
           (recur (next-state state))))))
 
 
-(defn start []
+(defn ^:export start []
+  (print "Starting...")
   (watch-stub)
   (start-loop (let [ele (create-element "canvas")]
                 (set! (.-width ele) js/innerWidth)
