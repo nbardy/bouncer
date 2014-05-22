@@ -23,5 +23,9 @@
    <preference name="webviewbounce" value="false" />
 
    <!-- permissions -->
-   <feature name="http://api.phonegap.com/1.0/accelerometer" />
+   <gap:plugin name="org.apache.cordova.device-motion" version="0.1.0" />
+
+   <feature name="Accelerometer">
+      <param name="android-package" value="org.apache.cordova.devicemotion.AccelListener" />
+   </feature>
 </widget>
