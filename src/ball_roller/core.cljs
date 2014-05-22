@@ -34,7 +34,7 @@
   (js/navigator.accelerometer.watchAcceleration
     (fn [acceleration] nil)
     (fn [error] nil)
-    speed))
+    #js {frequency: speed}))
 
 (def last-drawn-state (atom {}))
 
