@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <widget
-   id="com.dockstream.dockstream" 
-   version="2.2.71"
+   id="com.bouncer.bouncer" 
+   version="1.0.0"
    xmlns="http://www.w3.org/ns/widgets"
    xmlns:gap = "http://phonegap.com/ns/1.0">
 
-   <name>Barstream</name>
-   <description>Nearby Bars. Happy Hour. Drink Specials.</description>
-   <author href="http://nicholasbardy.com" email="nicholasbardy@yahoo.com">
+   <name>Bouncer</name>
+   <description>A Bouncing Ball</description>
+   <author href="http://nicholasbardy.com" email="nicholasbardy@gmail.com">
       Nicholas Bardy
    </author>
 
