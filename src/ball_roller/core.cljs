@@ -7,7 +7,7 @@
 
 (enable-console-print!)
 
-(def glow-length 400)
+(def glow-length 900)
 (def glow-width 90)
 
 (defn create-element [ele-name & attrs]
@@ -190,16 +190,13 @@
           (render canvas state)
           (recur (next-state state))))))
 
-(def canvas 
-  (let [ele (create-element "canvas")]
-    (set! (.-width ele) js/innerWidth)
-    (set! (.-height ele) js/innerHeight)
-    (.appendChild (-> js/document .-body) ele)
-    ele))
 
 (defn start []
   (watch-stub)
-  (start-loop canvas))
+  (start-loop (let [ele (create-element "canvas")]
+                (set! (.-width ele) js/innerWidth)
+                (set! (.-height ele) js/innerHeight)
+                (.appendChild js/document.body ele)
+                ele)))
 
-(.addEventListener js/document "deviceready" (fn [] (start)))
-
+(.addEventListener js/document "DOMContentLoaded" (fn [] (start)))
