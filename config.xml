@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<widget
+   id="com.dockstream.dockstream" 
+   version="2.2.71"
+   xmlns="http://www.w3.org/ns/widgets"
+   xmlns:gap = "http://phonegap.com/ns/1.0">
+
+   <name>Barstream</name>
+   <description>Nearby Bars. Happy Hour. Drink Specials.</description>
+   <author href="http://nicholasbardy.com" email="nicholasbardy@yahoo.com">
+      Nicholas Bardy
+   </author>
+
+   <access origin="*" />
+   <content src="index.html" />
+
+   <plugin name="InAppBrowser" value="CDVInAppBrowser" />
+
+   <preference name="orientation" value="portrait" />
+   <preference name="phonegap-version"           value="3.3.0" />
+
+   
+   <preference name="webviewbounce" value="false" />
+
+   <!-- permissions -->
+   <feature name="http://api.phonegap.com/1.0/accelerometer" />
+</widget>
