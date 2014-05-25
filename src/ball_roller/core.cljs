@@ -2,7 +2,7 @@
   (:require [cljs.core.async :refer [put! timeout chan sliding-buffer <!]]
             [cljs.core.match]
             [ball-roller.level1 :as level1])
-  (:require-macros [cljs.core.async.macros :as m :refer [go go-loop]]
+  (:require-macros [cljs.core.async.macros :as m :refer [go alt! go-loop]]
                    [cljs.core.match.macros :refer [match]]))
 
 (enable-console-print!)
@@ -17,24 +17,29 @@
     ele))
 
 (defn temper-tilt [tilt]
-  (/ tilt 830))
+  (* tilt 0.000012))
 
 (defn damper-bounce [speed]
-  (/ speed 1.2))
+  (* speed 0.62))
 
-(defn get-accel []
-  (let [c (chan)
-        ga js/navigator.accelerometer.getCurrentAcceleration]
-    (ga (fn [accel] (put! c accel)))
-    c))
+
+(def last-accel (atom #js {:alpha 0 :beta 0 :gamma 0}))
+(if js/DeviceOrientationEvent
+  (.addEventListener js/window "deviceorientation" 
+                     (fn [e] (reset! last-accel e)))
+  (js/navigator.accelerometer.watchAcceleration
+    (fn [accel] (reset! last-accel accel))
+    (fn [error] (.log js/console error))))
+
 
 (def speed 10)
 
 (defn watch-stub []
-  (js/navigator.accelerometer.watchAcceleration
-    (fn [acceleration] nil)
-    (fn [error] nil)
-    #js {:frequency speed}))
+  (if-not js/DeviceOrientationEvent
+    (js/navigator.accelerometer.watchAcceleration
+      (fn [acceleration] nil)
+      (fn [error] nil)
+      #js {:frequency speed})))
 
 (def last-drawn-state (atom {}))
 
@@ -70,6 +75,11 @@
     (aset ctx "fillStyle" (wall-fill ctx coord x y width height direction))
     (.fillRect ctx x y width height)))
 
+(defn draw-ball [ctx x y width height]
+  (aset ctx "fillStyle" "rgb(123,0,123)")
+  (.fillRect ctx x y 
+             width height))
+
 (defn draw [canvas state]
   (let [ctx (.getContext canvas "2d")
         ball (state :ball)
@@ -78,12 +88,11 @@
         x (-> ball :position :x)
         y (-> ball :position :y)]
     (clear canvas)
-    (aset ctx "fillStyle" "rgb(123,0,123)")
-    (.fillRect ctx (- x (/ width 2)) (- y (/ width 2)) 
-                   width width)
     (doseq [[wall t] (state :wall-hits)] 
       (when (-> t (- (state :timestamp)) (> (- 0 glow-length)))
-        (draw-glowing-wall! wall ctx)))))
+        (draw-glowing-wall! wall ctx)))
+    (draw-ball ctx (- x (/ width 2)) (- y (/ width 2)) 
+                   width width)))
 
 
 (defn play-sound [uri volume]
@@ -120,8 +129,8 @@
 (defn mean [x y] (/ (+ x y) 2))
 
 (defn update-physics [item dt]
-  (let [xacel (-> item :acceleration :x)
-        yacel (-> item :acceleration :y)
+  (let [xacel (-> item :acceleration :x -)
+        yacel (-> item :acceleration :y -)
         xvel (-> item :velocity :x)
         yvel (-> item :velocity :y)
         new-xvel (+ xvel (* dt xacel))
@@ -156,14 +165,15 @@
 (defn remove-flags [item]
   (dissoc item :has-bounced?))
 
-(defn update-ball-physics [item phone-state walls dt]
-  (let [xacel (temper-tilt (.-x phone-state))
-        yacel (temper-tilt (- (.-y phone-state)))]
-    (-> item 
-        (remove-flags)
-        (assoc-in [:acceleration] (hash-map :x xacel :y yacel))
-        (update-physics dt)
-        (bounce item walls))))
+(defn next-ball [state dt]
+  (let [xacel (temper-tilt (.-gamma (:phone state)))
+        yacel (temper-tilt (.-beta  (:phone state)))]
+    (assoc state :ball
+      (-> (state :ball) 
+          (remove-flags)
+          (assoc-in [:acceleration] (hash-map :x xacel :y yacel))
+          (update-physics dt)
+          (bounce (state :ball) (state :walls))))))
 
 (defn update-walls [state dt] 
   (let [hit-wall (-> state :ball :has-bounced?)]
@@ -175,7 +185,8 @@
   (let [now (.now js/Date)
         dt (- now (:timestamp state))]
     (-> state
-        (update-in [:ball] #(update-ball-physics % (state :phone) (state :walls) dt))
+        (assoc :phone @last-accel)
+        (next-ball dt)
         (update-walls dt)
         (assoc :timestamp now))))
 
@@ -184,12 +195,13 @@
 
 (def init-state (assoc (level1/new) :wall-hits []))
 
-(defn start-loop [canvas]
-  (go (loop [state (add-timestamp init-state)]
-        (let [state (merge state {:phone (<! (get-accel))})]
-          (render canvas state)
-          (recur (next-state state))))))
+(defn animate [state canvas]
+  (js/requestAnimationFrame (fn []
+      (animate (next-state state) canvas)))
+  (render canvas state))
 
+(defn start-loop [canvas]
+  (animate (add-timestamp init-state) canvas))
 
 (defn ^:export start []
   (print "Starting...")
