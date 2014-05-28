@@ -1,7 +1,7 @@
 (ns ball-roller.level1)
 
 (defn new []
-  (let [w js/innerWidth
+  (let [w js/innerWidth 
         h js/innerHeight]
     {:walls [{:coord :x 
               :pos 0 

@@ -1,20 +1,14 @@
 (ns ball-roller.core
   (:require [cljs.core.async :refer [put! timeout chan sliding-buffer <!]]
             [cljs.core.match]
+            [ball-roller.util :refer [create-element]]
+            [ball-roller.sounds :as sounds]
+            [ball-roller.graphics :as graphics]
             [ball-roller.level1 :as level1])
   (:require-macros [cljs.core.async.macros :as m :refer [go alt! go-loop]]
                    [cljs.core.match.macros :refer [match]]))
 
 (enable-console-print!)
-
-(def glow-length 900)
-(def glow-width 90)
-
-(defn create-element [ele-name & attrs]
-  (let [ele (.createElement js/document ele-name)]
-    (doseq [[k v] (first attrs)]
-      (.setAttribute ele (name k) v))
-    ele))
 
 (defn temper-tilt [tilt]
   (* tilt 0.000012))
@@ -22,8 +16,8 @@
 (defn damper-bounce [speed]
   (* speed 0.62))
 
-
 (def last-accel (atom #js {:alpha 0 :beta 0 :gamma 0}))
+
 (if js/DeviceOrientationEvent
   (.addEventListener js/window "deviceorientation" 
                      (fn [e] (reset! last-accel e)))
@@ -40,85 +34,6 @@
       (fn [acceleration] nil)
       (fn [error] nil)
       #js {:frequency speed})))
-
-(def last-drawn-state (atom {}))
-
-(defn clear [canvas]
-  (.clearRect (.getContext canvas "2d") 
-              0 0
-              (.-width canvas) (.-height canvas)))
-
-
-(defn wall-fill [ctx coord x y width height direction]
-  (let [color (case [coord direction]
-                     [:x 1] "green"
-                     [:x -1] "blue"
-                     [:y -1] "yellow"
-                     "red")
-        gradient (.createLinearGradient ctx x y (+ x width) (+ y height))]
-    (.addColorStop gradient 0 color)
-    (.addColorStop gradient 1 "transparent")
-    gradient))
-
-(defn draw-glowing-wall! [{:keys [coord pos length direction] :as d} ctx]
-
-  (let [[height width] (if (= coord :x) 
-                         [length glow-width]
-                         [glow-width length])
-        [x y] (case [coord direction]
-                     [:x -1] [(- pos width) 0]
-                     [:x 1]  [pos 0]
-                     [:y -1] [0 (- pos height)]
-                     [:y 1]  [0 pos]
-                     [0 0])]
-                
-    (aset ctx "fillStyle" (wall-fill ctx coord x y width height direction))
-    (.fillRect ctx x y width height)))
-
-(defn draw-ball [ctx x y width height]
-  (aset ctx "fillStyle" "rgb(123,0,123)")
-  (.fillRect ctx x y 
-             width height))
-
-(defn draw [canvas state]
-  (let [ctx (.getContext canvas "2d")
-        ball (state :ball)
-        width (ball :width)
-        height (ball :height)
-        x (-> ball :position :x)
-        y (-> ball :position :y)]
-    (clear canvas)
-    (doseq [[wall t] (state :wall-hits)] 
-      (when (-> t (- (state :timestamp)) (> (- 0 glow-length)))
-        (draw-glowing-wall! wall ctx)))
-    (draw-ball ctx (- x (/ width 2)) (- y (/ width 2)) 
-                   width width)))
-
-
-(defn play-sound [uri volume]
-  (let [audio (create-element "audio" {:src uri})]
-      (set! (.-volume audio) volume)
-      (.play audio)))
-
-(defn clamp [x [bottom top]]
-  (js/Math.min (js/Math.max x bottom) top))
-
-
-(defn ball-speed-to-volume [speed]
-  (clamp speed [0 1]))
-
-(defn play-sounds [state]
-  (when (-> state :ball :has-bounced?)
-    (play-sound "squish.mp3" 
-                (-> state :ball :has-bounced? :speed 
-                    ball-speed-to-volume))))
-
-(defn render [canvas state]
-  (if-not (= last-drawn-state state)
-    (js/requestAnimationFrame (fn []
-      (reset! last-drawn-state state)
-      (draw canvas state)
-      (play-sounds state)))))
 
 (defn move [item [xvel yvel] dt]
   (update-in item [:position] #(hash-map :x 
@@ -143,6 +58,14 @@
   (or (< p1 value p2)
       (> p1 value p2)))
 
+(defn +- [x y] [(- x y) (+ x y)])
+
+(defn flat [x]
+  ;; (print x)
+  ;; (js* "debugger;")
+  (apply concat x))
+
+(defn p [x y] (print y) x)
 
 (defn bounce [new-item old-item walls]
   (reduce 
@@ -157,10 +80,19 @@
                                js/Math.abs))}))
         item))
     new-item
-    (for [{:keys [coord pos] :as wall} walls]
-      (let [p1 (-> old-item :position coord)
-            p2 (-> new-item :position coord)]
-        [wall (if (in-between? pos [p1 p2]) (* 2 (- pos p2)))]))))
+    ; Each wall.
+    (flat (for [{:keys [coord pos] :as wall} walls]
+      (let [oldpos (-> old-item :position coord)
+            newpos (-> new-item :position coord)
+            ; This line uses old-item height
+            ; If a resizing item is introduced we will need to move to the mean.
+            length (old-item (if (= coord :x) :width :height))]
+        ; Each side.
+          (for [[p1 p2] 
+                (apply map vector 
+                  (map #(+- % (/ length 2)) [oldpos newpos]))]
+            [wall (if (in-between? pos [p1 p2]) 
+                    (* (- pos p2) 2))]))))))
 
 (defn remove-flags [item]
   (dissoc item :has-bounced?))
@@ -178,7 +110,7 @@
 (defn update-walls [state dt] 
   (let [hit-wall (-> state :ball :has-bounced?)]
     (if hit-wall
-      (update-in state [:wall-hits] #(conj % [hit-wall (+ (state :timestamp) dt)]))
+      (update-in state [:wall-hits] #(conj % [hit-wall (state :timestamp) ]))
       state)))
 
 (defn next-state [state]
@@ -198,7 +130,8 @@
 (defn animate [state canvas]
   (js/requestAnimationFrame (fn []
       (animate (next-state state) canvas)))
-  (render canvas state))
+  (sounds/play state)
+  (graphics/render canvas state))
 
 (defn start-loop [canvas]
   (animate (add-timestamp init-state) canvas))
