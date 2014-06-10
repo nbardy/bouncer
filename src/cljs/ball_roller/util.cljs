@@ -5,4 +5,3 @@
     (doseq [[k v] (first attrs)]
       (.setAttribute ele (name k) v))
     ele))
-

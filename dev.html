@@ -1,8 +1,14 @@
 <html>
 <body>
   <link rel="stylesheet" href="style.css"></link>
-  <script src="out/goog/base.js" type="text/javascript"></script>
+  <script src="out/dev/goog/base.js" type="text/javascript"></script>
+  <script src="src/js/graphics.js" type="text/javascript"></script>
   <script src="ball_roller.js" type="text/javascript"></script>
-  <script type="text/javascript">goog.require("ball_roller.core");</script>
+  <script type="text/javascript">
+    goog.require("ball_roller.core");
+    document.addEventListener("DOMContentLoaded", 
+        function() { ball_roller.core.start() })
+  </script>
+
 </body>
 </html>
