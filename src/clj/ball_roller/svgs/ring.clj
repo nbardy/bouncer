@@ -38,7 +38,5 @@
 
    ;;Clip the blurred sectors to the ring shape. -->
    (ring "r1" (fn [percent] 
-                (println percent)
-                (println "less: " (< percent 0.1))
                 (if (< percent 0.3) 0 1)))]
   [:use {:xlink:href "#r1" :fill "cyan"}])

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<widget
+   id="com.bouncer.bouncer" 
+   version="1.0.0"
+   xmlns="http://www.w3.org/ns/widgets"
+   xmlns:gap = "http://phonegap.com/ns/1.0">
+
+   <name>Bouncer</name>
+   <description>A Bouncing Ball</description>
+   <author href="http://nicholasbardy.com" email="nicholasbardy@gmail.com">
+      Nicholas Bardy
+   </author>
+
+   <access origin="*" />
+   <content src="index.html" />
+
+   <preference name="orientation" value="portrait" />
+   <preference name="phonegap-version"           value="3.3.0" />
+   
+   <preference name="webviewbounce" value="false" />
+
+   <!-- permissions -->
+   <gap:plugin name="org.apache.cordova.device-motion" version="0.1.0" />
+
+   <feature name="Accelerometer">
+      <param name="android-package" value="org.apache.cordova.devicemotion.AccelListener" />
+   </feature>
+</widget>
