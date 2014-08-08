@@ -109,8 +109,8 @@
     (clear canvas)
     (draw canvas (assoc state :mode :game))
     (aset ctx "font" "bold 12px sans-serif")
-    (js/Graphics.neonLightEffect ctx "Loss" (+ 43 (:x shift)) (+ 100 (:y shift)))
-    (js/Graphics.neonLightEffect ctx (str "Score: " (state :score)) (+ 43 (:x shift)) (+ 200 (:y shift)))))
+    (js/Graphics.neonLightEffect ctx (str "Score: " (state :score)) (+ 43 (:x shift)) (+ 200 (:y shift)))
+    (js/Graphics.neonLightEffect ctx (str "High Score: " (state :high-score)) (+ 43 (:x shift)) (+ 300 (:y shift)))))
 
 (defmethod draw :game [canvas state]
   (let [ctx (.getContext canvas "2d")

@@ -6,6 +6,7 @@
                    :plugins [[lein-figwheel "0.1.3-SNAPSHOT"]]}}
 
   :dependencies [[org.clojure/clojure "1.5.1"]
+                 [alandipert/storage-atom "1.2.3"]
                  [org.clojure/core.async "0.1.301.0-deb34a-alpha"]
                  [org.clojure/core.match "0.2.1"]
                  [org.clojure/clojurescript "0.0-2234"]]

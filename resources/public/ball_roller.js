@@ -19,6 +19,8 @@ goog.addDependency("../ball_roller/vector_math.js", ['ball_roller.vector_math'],
 goog.addDependency("../ball_roller/graphics/ball.js", ['ball_roller.graphics.ball'], ['cljs.core', 'ball_roller.vector_math', 'ball_roller.util']);
 goog.addDependency("../clojure/set.js", ['clojure.set'], ['cljs.core']);
 goog.addDependency("../ball_roller/graphics/core.js", ['ball_roller.graphics.core'], ['ball_roller.graphics.powerups', 'cljs.core', 'ball_roller.vector_math', 'ball_roller.graphics.ball', 'clojure.set']);
+goog.addDependency("../tailrecursion/cljson.js", ['tailrecursion.cljson'], ['goog.date.DateTime', 'cljs.core', 'clojure.string', 'cljs.reader']);
 goog.addDependency("../cljs/core/match.js", ['cljs.core.match'], ['cljs.core']);
+goog.addDependency("../alandipert/storage_atom.js", ['alandipert.storage_atom'], ['goog.Timer', 'cljs.core', 'tailrecursion.cljson']);
 goog.addDependency("../ball_roller/sounds.js", ['ball_roller.sounds'], ['cljs.core', 'ball_roller.util']);
-goog.addDependency("../ball_roller/core.js", ['ball_roller.core'], ['ball_roller.powerups', 'cljs.core', 'ball_roller.graphics.core', 'figwheel.client', 'ball_roller.vector_math', 'ball_roller.sounds', 'ball_roller.level1', 'cljs.core.match', 'ball_roller.util']);
+goog.addDependency("../ball_roller/core.js", ['ball_roller.core'], ['ball_roller.powerups', 'cljs.core', 'alandipert.storage_atom', 'ball_roller.graphics.core', 'figwheel.client', 'ball_roller.vector_math', 'ball_roller.sounds', 'ball_roller.level1', 'cljs.core.match', 'ball_roller.util']);

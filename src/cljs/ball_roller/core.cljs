@@ -5,6 +5,7 @@
             [ball-roller.sounds :as sounds]
             [ball-roller.vector-math :as vec]
             [ball-roller.graphics.core :as graphics]
+            [alandipert.storage-atom :refer [local-storage]]
             [figwheel.client :as fw :include-macros true]
             [ball-roller.level1 :as level1])
   (:require-macros [cljs.core.match.macros :refer [match]]))
@@ -18,10 +19,11 @@
 
 (enable-console-print!)
 
-(def damper 0.6)
+(def damper 0.2)
+(def temper 0.000007)
 
 (defn temper-tilt [tilt]
-  (-> tilt (* tilt) (* 0.000012) (* (sign tilt))))
+  (-> tilt (* tilt) (* temper) (* (sign tilt))))
 
 (defn damper-bounce [speed]
   (* speed damper))
@@ -105,15 +107,18 @@
   (dissoc item :has-bounced?))
 
 (defn next-ball [state dt]
-  (let [xacel (-> state :phone .-gamma temper-tilt)
-        yacel (-> state :phone .-beta temper-tilt)]
+  (let [[xacel yacel] 
+        (for [k ["gamma" "beta"]]
+          (temper-tilt 
+            (- (aget (state :phone) k)
+               (aget (state :initial-tilt) k))))]
     (assoc state :ball
-      (-> (state :ball) 
-          (add-history (state :timestamp))
-          (remove-flags)
-          (assoc-in [:acceleration] (hash-map :x xacel :y yacel))
-          (update-physics dt)
-          (bounce (state :ball) (state :walls))))))
+           (-> (state :ball) 
+               (add-history (state :timestamp))
+               (remove-flags)
+               (assoc-in [:acceleration] (hash-map :x xacel :y yacel))
+               (update-physics dt)
+               (bounce (state :ball) (state :walls))))))
 
 (defn update-walls [state dt] 
   (let [hit-wall (get-in state [:ball :has-bounced?])]
@@ -195,21 +200,33 @@
         (update-timestamp$ (new-game level1/new)))
     state))
 
-(defmethod advance :victory [state]
+(def persistent-state (local-storage (atom {}) :persistent-state))
+(defn log-high-score! [state]
+  (swap! persistent-state update-in [:high-score] 
+         #(max (or % 0) (state :score)))
+  (assoc state :high-score (:high-score @persistent-state)))
+
+(defn reset-on-click [state]
   (if-not (empty? @click-events)
     (do (reset! click-events [])
         init-state)
     state))
 
+(defmethod advance :victory [state]
+  (-> state 
+      log-high-score!
+      reset-on-click))
 
 (defmethod advance :loss [state]
-  (if-not (empty? @click-events)
-    (do (reset! click-events [])
-        init-state)
-    state))
+  (-> state 
+      log-high-score!
+      reset-on-click))
 
 (defn next-state [state]
-  (advance (assoc state :phone @last-accel)))
+  (advance 
+    (-> state
+        (assoc :phone @last-accel)
+        (update-in [:initial-tilt] #(or % @last-accel)))))
 
 (defn animate! [state canvas]
   (js/window.requestAnimationFrame (fn []
