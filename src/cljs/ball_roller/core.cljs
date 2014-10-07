@@ -22,6 +22,9 @@
 (def damper 0.2)
 (def temper 0.000007)
 
+(defn cap-vel [vel]
+  (max (min 2 vel) -2))
+
 (defn temper-tilt [tilt]
   (-> tilt (* tilt) (* temper) (* (sign tilt))))
 
@@ -58,8 +61,8 @@
         yacel (-> item :acceleration :y)
         xvel (-> item :velocity :x)
         yvel (-> item :velocity :y)
-        new-xvel (+ xvel (* dt xacel))
-        new-yvel (+ yvel (* dt yacel))]
+        new-xvel (cap-vel (+ xvel (* dt xacel)))
+        new-yvel (cap-vel (+ yvel (* dt yacel)))]
     (-> item 
         (update-in [:velocity] #(hash-map :x new-xvel :y new-yvel))
         (move [(mean xvel new-xvel) (mean yvel new-yvel)] dt))))
