@@ -34,14 +34,14 @@ Math.seededRandom = function(min,max) {
  * @param {number} y
  */
 Graphics.neonLightEffect = function(ctx,text,x,y) {
-  var size = "40px"
+  var size = "65px"
   var font = size + " " + "Futura, Helvetica, sans-serif";
   var jitter = 5; // the distance of the maximum jitter
   var offsetX = x;
   var offsetY = y;
   var blur = 100;
   ctx.font = font;
-  var metrics = {width: 400};
+  var metrics = {width: 800};
   metrics.height = parseInt(size.slice(0,-2))
   Math.seed = text.charCodeAt(0) + 
     (text.charCodeAt(1) || 0) * 34.4 +
@@ -182,4 +182,84 @@ Graphics.getControlPoints = function(x0,y0,x1,y1,x2,y2,t){
     var p2y=y1-fb*(y0-y2);  
     
     return [p1x,p1y,p2x,p2y]
+}
+
+/* 
+ * @param {number} t
+ * @param {number} speed
+ */
+Graphics.bounce = function(t, speed) {
+  return Math.cos(t/speed * 2 * Math.PI + 4) + Math.sin(t* (1/speed) * 2 * Math.PI);
+}
+/* 
+ * @param {Object} ctx
+ * @param {number} width
+ * @param {number} height
+ * @param {number} rows
+ * @param {number} cols
+ * @param {number} randness
+ * @param {number} t
+ */
+Graphics.Tesselation = function(ctx, width, height, rows , cols, randness, t) {
+  var bounceAmp = 60;
+  var animBaseSpeed = 8000;
+  var points = [];
+  var fudge = function (at) { return bounceAmp * Graphics.bounce(at,animBaseSpeed);}
+  for(var i = 0; i < rows; i++) {
+    for(var j = 0; j < cols; j++) {
+      // Default fudge edges
+      Math.seed = i * 9 * j * 10;
+      // Add a shift
+      var xspeedmod = Math.seededRandom(0.8,1.2);
+      var yspeedmod = Math.seededRandom(0.8,1.2);
+      var xshiftmod = Math.seededRandom(-2000,2000);
+      var yshiftmod = Math.seededRandom(-2000,2000);
+      var xt = (t * xspeedmod) + xshiftmod;
+      var yt = (t * yspeedmod) + yshiftmod;
+      var xfudge;
+      if( i === 0) { xfudge = -40; }
+      else if(i === (rows - 1)) { xfudge = 40; }
+      else { xfudge = Math.seededRandom(-1,1) * fudge(xt);}
+
+      var yfudge;
+      if(j === 0) { yfudge = -40; }
+      else if(j === (cols - 1)) { yfudge = 40; }
+      else { yfudge = Math.seededRandom(-1,1) * fudge(yt); }
+
+      points.push([xfudge + i * (width / (rows - 1)),
+            yfudge + j * (height / (cols - 1))])
+    }
+  }
+
+  var triangles = Delaunay.triangulate(points);
+
+  var i = triangles.length;
+  while (i) {
+    i--;
+    var pt1 = [points[triangles[i]][0], points[triangles[i]][1]]; i--;
+    var pt2 = [points[triangles[i]][0], points[triangles[i]][1]]; i--;
+    var pt3 = [points[triangles[i]][0], points[triangles[i]][1]];
+    ctx.fillStyle = Graphics.getTriangleColor(pt1,pt2,pt3,width,height);
+    ctx.beginPath();
+    ctx.moveTo(pt1[0],pt1[1]);
+    ctx.lineTo(pt2[0],pt2[1]);
+    ctx.lineTo(pt3[0],pt3[1]);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+/*
+ * @param {Object} triangle
+ * @param {num} width
+ * @param {num} height
+ */
+Graphics.getTriangleColor = function (pt1,pt2,pt3, width, height) {
+	var midPoint = function (point1,point2) {
+		return [(point1[0]+point2[0])/2, (point1[1]+point2[1])/2];
+	}
+	// Pick a point inside the triangle
+	var point = midPoint(pt3, midPoint(pt1,pt2));
+  return "rgb(" + Math.floor(point[0]/width * 255) + ",0," + 
+    Math.floor(point[1]/height * 255) + ")";
 }

@@ -19,11 +19,14 @@
 
 (enable-console-print!)
 
-(def damper 0.2)
-(def temper 0.000007)
+(def damper 0.6)
+(def temper 0.000002)
+(def initial-bounce-time (* 60 80))
 
 (defn cap-vel [vel]
   (max (min 2 vel) -2))
+
+(defn friction [vel dt] (- vel (* 0.02 dt vel)))
 
 (defn temper-tilt [tilt]
   (-> tilt (* tilt) (* temper) (* (sign tilt))))
@@ -31,14 +34,16 @@
 (defn damper-bounce [speed]
   (* speed damper))
 
-(defonce last-accel (atom #js {:alpha 0 :beta 0 :gamma 0}))
+(defonce last-tilt (atom #js {:alpha 0 :beta 0 :gamma 0}))
+(defonce reference-tilt (atom #js {:alpha 0 :beta 0 :gamma 0}))
 (defonce click-events (atom []))
 
 (defn setup-orientation-watcher! []
   (js/window.addEventListener 
     "deviceorientation" 
     (fn [e] 
-      (reset! last-accel e) 
+      ; Prune the elements we need out.
+      (reset! last-tilt #js {:gamma (.-gamma e) :alpha (.-alpha e) :beta (.-beta e)})
        true)))
 
 (defn setup-click-watcher! []
@@ -49,20 +54,19 @@
 (def speed 10)
 
 (defn move [item [xvel yvel] dt]
-  (update-in item [:position] #(hash-map :x 
-                                         (-> % :x (+ (* dt xvel)))
-                                         :y
-                                         (-> % :y (+ (* dt yvel))))))
+  (update-in item [:position] 
+    #(hash-map :x (-> % :x (+ (* dt xvel)))
+               :y (-> % :y (+ (* dt yvel))))))
 
 (defn mean [x y] (/ (+ x y) 2))
 
 (defn update-physics [item dt]
-  (let [xacel (-> item :acceleration :x)
-        yacel (-> item :acceleration :y)
-        xvel (-> item :velocity :x)
-        yvel (-> item :velocity :y)
-        new-xvel (cap-vel (+ xvel (* dt xacel)))
-        new-yvel (cap-vel (+ yvel (* dt yacel)))]
+  (let [xacel (get-in item [:acceleration :x])
+        yacel (get-in item [:acceleration :y])
+        xvel (get-in item [:velocity :x])
+        yvel (get-in item [:velocity :y])
+        new-xvel (-> (+ xvel (* dt xacel)) (cap-vel) (friction dt))
+        new-yvel (-> (+ yvel (* dt yacel)) (cap-vel) (friction dt))]
     (-> item 
         (update-in [:velocity] #(hash-map :x new-xvel :y new-yvel))
         (move [(mean xvel new-xvel) (mean yvel new-yvel)] dt))))
@@ -111,10 +115,9 @@
 
 (defn next-ball [state dt]
   (let [[xacel yacel] 
-        (for [k ["gamma" "beta"]]
-          (temper-tilt 
-            (- (aget (state :phone) k)
-               (aget (state :initial-tilt) k))))]
+        (for [k ["gamma" "beta"]] 
+          (temper-tilt (aget (state :phone) k)))]
+
     (assoc state :ball
            (-> (state :ball) 
                (add-history (state :timestamp))
@@ -178,7 +181,7 @@
   (merge {:mode :game
           :previous-states []
           :wall-hits []
-          :bounce-time (* 60 40)
+          :bounce-time initial-bounce-time
           :width js/window.innerWidth
           :height js/window.innerHeight}
          (level) ))
@@ -197,9 +200,11 @@
         (activate-items)
         (update-timestamp$))))
 
+(defn copy [jsobject] (js/JSON.parse (js/JSON.stringify jsobject)))
 (defmethod advance :menu [state]
   (if-not (empty? @click-events)
     (do (reset! click-events [])
+        (reset! reference-tilt (copy @last-tilt))
         (update-timestamp$ (new-game level1/new)))
     state))
 
@@ -225,21 +230,23 @@
       log-high-score!
       reset-on-click))
 
+
 (defn next-state [state]
-  (advance 
-    (-> state
-        (assoc :phone @last-accel)
-        (update-in [:initial-tilt] #(or % @last-accel)))))
+  (let [current-tilt #js {:gamma (.-gamma @last-tilt)
+                          :beta  (- (.-beta @last-tilt)
+                                    (.-beta @reference-tilt))
+                          :alpha (- (.-alpha @last-tilt)
+                                    (.-alpha @reference-tilt))}]
+    (advance (assoc state :phone current-tilt))))
 
-(defn animate! [state canvas]
+(defn animate! [state canvases]
   (js/window.requestAnimationFrame (fn []
-      (animate! (next-state state) canvas)))
+      (animate! (next-state state) canvases)))
   ;(sounds/play state)
-  (graphics/render canvas state)
-  )
+  (graphics/render canvases state))
 
-(defn start-loop [canvas]
-  (animate! (update-timestamp$ init-state) canvas))
+(defn start-loop [canvases]
+  (animate! (update-timestamp$ init-state) canvases))
 
 (defn ^:export start [dev]
   (print "Starting...")
@@ -248,8 +255,12 @@
       :jsload-callback (fn [] (print "Core reloaded!"))))
   (setup-orientation-watcher!)
   (setup-click-watcher!)
-  (start-loop (let [ele (create-element! "canvas")]
-                (set! (.-width ele) js/window.innerWidth)
-                (set! (.-height ele) js/window.innerHeight)
-                (.appendChild js/document.body ele)
-                ele)))
+  (let [canvii 
+        (for [_ (range 2)]
+          (create-element! "canvas"))]
+    (doseq [canvas canvii]
+      (set! (.-width canvas) js/window.innerWidth)
+      (set! (.-height canvas) js/window.innerHeight)
+      (set! (.-backgroundColor canvas) "transparent")
+      (.appendChild js/document.body canvas))
+    (start-loop canvii)))

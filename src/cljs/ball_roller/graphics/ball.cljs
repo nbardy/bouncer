@@ -36,8 +36,7 @@
 
 (defn draw-ball [ctx {:keys [ball timestamp bounce-time] :as state}]
   (let [radius (ball :radius)
-        size {:width radius
-              :height radius}
+        size {:width radius :height radius}
         timestamp (state :timestamp)
         ; Ball starts full
         timeleft (- bounce-time 
@@ -52,14 +51,15 @@
         ring-width (-> inner-rad (- 0) (/ 6))
         x (-> ball :position :x)
         y (-> ball :position :y)]
-    (aset ctx "strokeStyle" "rgba(0,185,195,1)")
+    (aset ctx "strokeStyle" "rgba(221,185,195,1)")
     (when-not (= percent 1)
-      (doseq [[shift speed rad] [[400 1.4 0.1]
-                              [400 -1.9 0.25]
-                              [400 1.4 0.40]
-                              [200 -1.8 0.55]
-                              [600 1.2 0.70]
-                              [800 -1.2 0.85]]]
+      (doseq [[shift speed rad] 
+              [[400 1.4 0.1]
+               [400 -1.9 0.25]
+               [400 1.4 0.40]
+               [200 -1.8 0.55]
+               [600 1.2 0.70]
+               [800 -1.2 0.85]]]
         (draw-ring ctx x y (rotate timestamp shift speed) 
                    ring-width (* rad inner-rad) percent)))
     (.beginPath ctx)

@@ -8,10 +8,18 @@
 (def glow-width 25)
 (defn clear [canvas]
   (let [ctx (.getContext canvas "2d")]
+    (aset ctx "fillStyle" "rgb(0,0,0,0)")))
+
+(defn tesse [canvas]
+  (let [ctx (.getContext canvas "2d")]
     (aset ctx "fillStyle" "rgb(26,26,26)")
-    (.fillRect (.getContext canvas "2d") 
-                0 0
-                (.-width canvas) (.-height canvas))))
+    (aset ctx "strokeStyle" "rgba(0,0,0,0)")
+    (js/Graphics.Tesselation 
+      (.getContext canvas "2d") 
+      (.-width canvas) (.-height canvas)
+      6 12
+      20 
+      (js/Date.now))))
 
 (defn wall-fill [ctx coord x y width height direction intensity]
   (let [color (case [coord direction]
@@ -85,9 +93,9 @@
    :y (damper (.-beta phone))})
 
 
-(defmulti draw "Draw the state." (fn [canvas state] (:mode state)))
+(defmulti draw "Draw the state." (fn [canvases state] (:mode state)))
 
-(defmethod draw :menu [canvas state]
+(defmethod draw :menu [[canvas background-canvas] state]
   (let [ctx (.getContext canvas "2d")
         shift (text-offset state)]
     (clear canvas)
@@ -95,7 +103,7 @@
     (js/Graphics.neonLightEffect ctx "New Game" (+ 43 (:x shift)) (+ 100 (:y shift)))))
 
 
-(defmethod draw :victory [canvas state]
+(defmethod draw :victory [[canvas background-canvas] state]
   (let [ctx (.getContext canvas "2d")
         shift (text-offset state)]
     (clear canvas)
@@ -103,7 +111,7 @@
     (js/Graphics.neonLightEffect ctx "Victory" (+ 43 (:x shift)) (+ 100 (:y shift)))))
 
 
-(defmethod draw :loss [canvas state]
+(defmethod draw :loss [[canvas background-canvas] state]
   (let [ctx (.getContext canvas "2d")
         shift (text-offset state)]
     (clear canvas)
@@ -112,17 +120,17 @@
     (js/Graphics.neonLightEffect ctx (str "Score: " (state :score)) (+ 43 (:x shift)) (+ 200 (:y shift)))
     (js/Graphics.neonLightEffect ctx (str "High Score: " (state :high-score)) (+ 43 (:x shift)) (+ 300 (:y shift)))))
 
-(defmethod draw :game [canvas state]
+(defmethod draw :game [[background-canvas canvas] state]
   (let [ctx (.getContext canvas "2d")
         current-step (merge {:intensity 2}
                        (nth (-> state :pattern :steps) 
                             (-> state :pattern :current)))]
-    (clear canvas)
+    (tesse background-canvas)
     (powerups/draw ctx state)
     (draw-wall-hits ctx state)
     (draw-glowing-wall! ctx current-step)
     ;(draw-ball-path ctx state)
     (draw-ball ctx state)))
 
-(defn render [canvas state]
-  (draw canvas state))
+(defn render [canvases state]
+  (draw canvases state))

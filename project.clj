@@ -2,8 +2,8 @@
   :description "FIXME: write this!"
   :url "http://example.com/FIXME"
   :profiles {:dev {:source-paths ["dev"]
-                   :dependencies [[figwheel "0.1.3-SNAPSHOT"]]
-                   :plugins [[lein-figwheel "0.1.3-SNAPSHOT"]]}}
+                   :dependencies [[figwheel "0.1.4-SNAPSHOT"]]
+                   :plugins [[lein-figwheel "0.1.4-SNAPSHOT"]]}}
 
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [alandipert/storage-atom "1.2.3"]
@@ -20,6 +20,7 @@
   :lein-watcher {:input-dir "src/clj/ball_roller/svgs/"
                  :output-dir "resources/public/images"
                  :output-type "svg"}
+  :figwheel {:js-dirs ["resources/public/js"]}
 
   :cljsbuild { 
     :builds [{:id "ball-roller"
