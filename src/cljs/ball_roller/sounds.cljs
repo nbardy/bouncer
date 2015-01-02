@@ -1,5 +1,5 @@
 (ns ball-roller.sounds
-  (:require [ball-roller.util :refer [create-element!]]))
+  (:require [ball-roller.util :refer [create-element]]))
 
 
 (def directory "sounds/")
@@ -23,7 +23,7 @@
          "squish.mp3" )))
 
 (defn play-sound [uri volume]
-  (let [audio (create-element! "audio" {:src uri})]
+  (let [audio (create-element "audio" :src uri)]
       (set! (.-volume audio) volume)
       (.play audio)))
 

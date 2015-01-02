@@ -1,5 +1,5 @@
 (ns ball-roller.powerups
-  (:require [ball-roller.util :refer [create-element! current-time$]]
+  (:require [ball-roller.util :refer [create-element current-time$]]
             [ball-roller.components :refer [powerup]]))
 
 (def grow-ball!

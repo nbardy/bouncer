@@ -16,7 +16,7 @@ goog.addDependency("../figwheel/client.js", ['figwheel.client'], ['cljs.core', '
 goog.addDependency("../ball_roller/util.js", ['ball_roller.util'], ['cljs.core']);
 goog.addDependency("../ball_roller/powerups.js", ['ball_roller.powerups'], ['ball_roller.components', 'cljs.core', 'ball_roller.util']);
 goog.addDependency("../ball_roller/vector_math.js", ['ball_roller.vector_math'], ['cljs.core']);
-goog.addDependency("../ball_roller/graphics/ball.js", ['ball_roller.graphics.ball'], ['cljs.core', 'ball_roller.vector_math', 'ball_roller.util']);
+goog.addDependency("../ball_roller/graphics/ball.js", ['ball_roller.graphics.ball'], ['cljs.core', 'ball_roller.vector_math']);
 goog.addDependency("../clojure/set.js", ['clojure.set'], ['cljs.core']);
 goog.addDependency("../ball_roller/graphics/core.js", ['ball_roller.graphics.core'], ['ball_roller.graphics.powerups', 'cljs.core', 'ball_roller.vector_math', 'ball_roller.graphics.ball', 'clojure.set']);
 goog.addDependency("../tailrecursion/cljson.js", ['tailrecursion.cljson'], ['goog.date.DateTime', 'cljs.core', 'clojure.string', 'cljs.reader']);
