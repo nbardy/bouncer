@@ -248,7 +248,6 @@
 (defn start-loop [canvases]
   (animate! (update-timestamp$ init-state) canvases))
 
-
 (defn ^:export start [dev]
   (print "Starting...")
   (when dev
@@ -258,7 +257,7 @@
   (setup-click-watcher!)
   (let [canvii 
         (for [_ (range 2)]
-          (create-element "canvas"))]
+          (create-element! "canvas"))]
     (doseq [canvas canvii]
       (set! (.-width canvas) js/window.innerWidth)
       (set! (.-height canvas) js/window.innerHeight)
